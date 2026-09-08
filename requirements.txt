@@ -1,0 +1,27 @@
+# Python 3.10+ required
+# Tested on Windows 11 (Anaconda 'soft' environment) with Ryzen 7 5825U
+# and on Ubuntu 24.04.
+
+# Core numerical + scientific stack
+numpy>=1.24
+scipy>=1.10
+pandas>=2.0
+scikit-learn>=1.3
+
+# Graph algorithms (for k-shortest paths, connected components)
+networkx>=3.0
+
+# Plotting
+matplotlib>=3.7
+
+# Geospatial (for building the CSV grid from the DEM + shapefile)
+# These are only needed to REGENERATE grilla_con_W_hidrica.csv from
+# scratch. If you use the CSV shipped in data/, they are optional.
+geopandas>=0.14
+rasterio>=1.3
+shapely>=2.0
+pyproj>=3.6
+
+# Notebook environment (only for running the notebooks/ .ipynb files)
+jupyter>=1.0
+ipykernel>=6.25
