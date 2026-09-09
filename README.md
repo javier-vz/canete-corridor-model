@@ -36,6 +36,9 @@ canete-corridor-model/
 │   ├── run_phase1_local.py              Phase-1 scan, multiprocessing (~30 h)
 │   ├── run_fete_local.py                FETE baseline, multiprocessing (~1 h)
 │   ├── run_ablation_weights.py          Weight ablation (~6 h)
+│   ├── run_ablation_quantile.py         tau_E ablation (~1.5 h)
+│   ├── run_ablation_T.py                T-parameter ablation (~2.5 h)
+│   ├── run_fete_1mE.py                  FETE with 1-E cost surface (~1 h)
 │   ├── preview_phase1.py                Quick sanity check
 │   ├── regen_figure2.py                 Regenerates Figure 2 with scalebar
 │   └── regen_figures_with_scalebar.py   Regenerates Figures 3, 4, 5
@@ -56,7 +59,7 @@ canete-corridor-model/
 ## Quick start (30 seconds)
 
 ```bash
-git clone https://github.com/YOUR-USERNAME/canete-corridor-model.git
+git clone https://github.com/javier-vz/canete-corridor-model.git
 cd canete-corridor-model
 pip install -r requirements.txt
 
@@ -84,8 +87,11 @@ For a step-by-step guide to reproducing each numerical result and figure, see **
 | Fig. 2 (input surfaces) | `python scripts/regen_figure2.py` | seconds |
 | Figs. 3, 4, 5 (with scalebar) | `python scripts/regen_figures_with_scalebar.py` | ~25 min |
 | FETE baseline (Table 3, §4.5) | `python scripts/run_fete_local.py && python src/analyze/analyze_fete.py` | ~1 h |
+| FETE 1-E variant (Table 3, §4.5) | `python scripts/run_fete_1mE.py` | ~1 h |
 | KS diagnostic (§4.3) | `python src/analyze/analyze_ks_test.py --state state_cache.pkl` | seconds |
 | Weight ablation (§3.6) | `python scripts/run_ablation_weights.py` | ~6 h |
+| tau_E ablation (§3.6) | `python scripts/run_ablation_quantile.py` | ~1.5 h |
+| T-parameter ablation (§3.6) | `python scripts/run_ablation_T.py` | ~2.5 h |
 | (Eps, kappa) phase scan (§3.6) | `python scripts/run_phase1_local.py` | ~30 h |
 
 Runtimes are measured on a Ryzen 7 5825U (8 physical cores, 15 GB RAM), Windows 11 + Anaconda `soft` environment. Wall times scale roughly with the number of physical cores available.
