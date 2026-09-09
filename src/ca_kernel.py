@@ -79,12 +79,27 @@ def build_site_mask(df, lattice, arch_col="presencia_sitio_nuevo"):
     return M
 
 
-def build_terrace_field(h_grid, p_grid, valid_mask, window=5):
+def build_terrace_field(h_grid, p_grid, valid_mask,
+                        r=0.65, s=0.20, window=5):
+    """Terrace suitability field T (Equation 2 of the paper).
+
+    Parameters
+    ----------
+    r : float in [0, 1]
+        Weight of the local flatness (1 - p) term. Nominal 0.65.
+        The neighbourhood-flatness term gets weight (1 - r).
+    s : float in [0, 1]
+        Weight of the low-elevation preference term. Nominal 0.20.
+        The elevation-neutral term gets weight (1 - s).
+    window : int
+        Size of the uniform mean filter for neighbourhood flatness.
+        Nominal 5 cells.
+    """
     flat = 1.0 - p_grid
     low = 1.0 - h_grid
     flat_local = uniform_filter(flat, size=window, mode="nearest")
-    T = 0.65 * flat + 0.35 * flat_local
-    T = T * (0.8 + 0.2 * low)
+    T = r * flat + (1.0 - r) * flat_local
+    T = T * ((1.0 - s) + s * low)
     vals = T[valid_mask]
     Tn = np.zeros_like(T)
     Tn[valid_mask] = (vals - vals.min()) / (vals.max() - vals.min() + 1e-12)
@@ -361,7 +376,8 @@ class State:
 def build_state(csv_path,
                 a_weights=(0.10, 0.20, 0.50, 0.20),
                 b_weights=(0.18, 0.36, 0.26, 0.20),
-                peak_quantile=0.92, nms_min_dist=5, k_neighbors=6):
+                peak_quantile=0.92, nms_min_dist=5, k_neighbors=6,
+                T_r=0.65, T_s=0.20, T_window=5):
     df = pd.read_csv(csv_path)
     if "h_norm" not in df.columns:
         df["h_norm"] = minmax(df["altitud"])
@@ -374,7 +390,8 @@ def build_state(csv_path,
     h_grid = build_grid_from_column(df, lattice, "h_norm")
     p_grid = build_grid_from_column(df, lattice, "p_norm")
     w_grid = build_grid_from_column(df, lattice, "W_corridor")
-    T_grid = build_terrace_field(h_grid, p_grid, valid_mask, window=5)
+    T_grid = build_terrace_field(h_grid, p_grid, valid_mask,
+                                   r=T_r, s=T_s, window=T_window)
 
     df["T_terrace"] = [
         T_grid[lattice["y_to_iy"][row["Y"]], lattice["x_to_ix"][row["X"]]]
@@ -531,12 +548,24 @@ def run_one(state: State,
 # =====================================================================
 
 def run_fete(state: State, n_random_pairs: int, seed: int,
-             topK_mult: float = 2.0):
+             topK_mult: float = 2.0, cost_surface: np.ndarray = None):
     """Baseline: FETE with random endpoint pairs, deterministic LCP,
     no noise or congestion. Returns the same observables as run_one so
     they can be compared point-to-point.
+
+    Parameters
+    ----------
+    cost_surface : np.ndarray or None
+        If None, use the default cost surface c stored in state.G_template
+        (edge weight_base attribute). If a 2D array is provided, build a
+        temporary graph using this surface as the cost. Useful for the
+        1-E FETE variant (pass cost_surface = 1 - state.E_grid).
     """
-    G = state.G_template  # no copy: we don't mutate
+    if cost_surface is not None:
+        # Build a temporary graph with the alternative cost surface
+        G = build_graph(cost_surface, state.valid_mask)
+    else:
+        G = state.G_template  # no copy: we don't mutate
     rng = np.random.default_rng(seed)
 
     valid_cells = np.argwhere(state.valid_mask)
