@@ -10,7 +10,7 @@ This repository provides the code, processed data, and computational recipes nee
 
 The model treats archaeological prospection as an unsupervised movement-corridor problem. Starting from a 250 m analysis grid over the lower Cañete Valley, it derives an environmental affinity field $E$ and a cost surface $c$ from four normalised inputs (elevation, slope, hydrological corridor, terrace suitability), extracts a set of 24 attractor cells from $E$, and computes an ensemble of $k$-shortest paths between attractor pairs on the cost graph. The accumulated traffic field $F$ and its blend $L$ with the terrace layer are then evaluated against 84 archaeological sites at cell scale (AUC, buffered overlap, Kolmogorov–Smirnov) and at zonal scale (Spearman correlation over K-means partitions).
 
-The repo covers **only the JCAA paper** (Cañete). A separate physics-oriented analysis of the phase transition observed in the traffic field is planned as a companion Letter and is not included here.
+The repo covers **only the JCAA paper** (Cañete). 
 
 ## Repository layout
 
