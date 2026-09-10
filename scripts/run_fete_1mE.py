@@ -34,8 +34,13 @@ import numpy as np
 
 N_PAIRS = 86
 N_SEEDS = 30
-SEED_BASE = 6000
-OUT_DIR = Path("results_fete_1mE")
+# SEED_BASE MUST match run_fete_local.py (which uses 2000-2029) so that
+# each seed produces IDENTICAL random endpoint pairs across both variants.
+# This allows seed-by-seed paired comparison of FETE(c) vs FETE(1-E), not
+# just aggregate mean comparison. Previously used 6000-6029 which
+# generated a completely different endpoint set per seed.
+SEED_BASE = 2000
+OUT_DIR = Path("results_fete_1mE_matched")
 
 
 def _init_worker(csv_path):
