@@ -433,7 +433,8 @@ def run_one(state: State,
             beta_path: float = 1.5,
             n_paths: int = 4,
             topK_mult: float = 2.0,
-            congestion_cap: float = 2.0):
+            congestion_cap: float = 2.0,
+            return_fields: bool = False):
     """Run the CA model once. Returns dict of observables.
 
     m1: fraction of top-K cells in largest connected component
@@ -527,7 +528,7 @@ def run_one(state: State,
 
     auc = auc_score(L_field, state.site_mask, state.valid_mask)
 
-    return {
+    result = {
         "eps": float(eps), "kappa": float(kappa), "seed": int(seed),
         "lcc_size": lcc,
         "n_threshold": n_thr,
@@ -536,6 +537,11 @@ def run_one(state: State,
         "n_clusters": int(len(sizes)),
         "F_norm_sum_check": float(F_norm.sum()),
     }
+    if return_fields:
+        result["F"] = F_norm
+        result["L"] = L_field
+        result["S_topK"] = S_topK
+    return result
 
 
 # =====================================================================
