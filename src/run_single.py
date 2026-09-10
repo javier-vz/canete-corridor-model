@@ -11,8 +11,11 @@ Usage - FETE baseline:
     python run_single.py fete --n_pairs 86 --seed 42 \\
         --state state_cache.pkl --out results/fete_n86_s42.json
 
+Note: The subcommand ('ca' or 'fete') MUST come first, then its options.
+
 Designed for cluster array jobs. Each job is independent and idempotent
-(skips if output file already exists).
+(skips if output file already exists). Cross-platform (Windows / Linux /
+macOS): uses platform.node() rather than os.uname() for host identification.
 """
 import argparse
 import json
@@ -45,6 +48,10 @@ def main():
     ap = argparse.ArgumentParser()
     sub = ap.add_subparsers(dest="mode", required=True)
 
+    # Common arguments (state, out) — will be added to each subparser
+    # because argparse doesn't cleanly support common args + subparsers
+    # in a way that works with both orderings.
+
     # CA subparser
     ca = sub.add_parser("ca", help="Run CA model")
     ca.add_argument("--eps", type=float, required=True)
@@ -54,15 +61,17 @@ def main():
     ca.add_argument("--n_paths", type=int, default=4)
     ca.add_argument("--congestion_cap", type=float, default=2.0)
     ca.add_argument("--topK_mult", type=float, default=2.0)
+    ca.add_argument("--state", type=str, required=True)
+    ca.add_argument("--out", type=str, required=True)
 
     # FETE subparser
     fete = sub.add_parser("fete", help="Run FETE baseline")
     fete.add_argument("--n_pairs", type=int, required=True)
     fete.add_argument("--seed", type=int, required=True)
     fete.add_argument("--topK_mult", type=float, default=2.0)
+    fete.add_argument("--state", type=str, required=True)
+    fete.add_argument("--out", type=str, required=True)
 
-    ap.add_argument("--state", type=str, required=True)
-    ap.add_argument("--out", type=str, required=True)
     args = ap.parse_args()
 
     out = Path(args.out)
@@ -85,7 +94,10 @@ def main():
         raise ValueError(f"Unknown mode: {args.mode}")
     dt = time.time() - t0
     res["runtime_s"] = dt
-    res["host"] = os.uname().nodename
+    # Use platform.node() for cross-platform host identification
+    # (os.uname() is Unix-only; not available on Windows).
+    import platform
+    res["host"] = platform.node()
 
     with open(out, "w") as f:
         json.dump(res, f, indent=2)
