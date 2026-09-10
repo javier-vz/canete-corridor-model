@@ -36,9 +36,26 @@ mpl.rcParams['font.family'] = 'serif'
 mpl.rcParams['font.size'] = 9
 
 
-def ks_report(field, site_mask, valid_mask, name, out_lines):
+def ks_report(field, site_mask, valid_mask, name, out_lines,
+              background_mask=None):
+    """Kolmogorov-Smirnov two-sample test on `field` at site cells
+    vs. background cells.
+
+    Parameters
+    ----------
+    background_mask : np.ndarray or None
+        If None (default), the background is `valid_mask & ~site_mask`
+        --- the standard convention. If provided, the background is
+        `valid_mask & background_mask`, which is the correct choice
+        for leave-one-cluster-out variants: the residual sites are
+        compared against the ORIGINAL non-site background rather than
+        against a background that has absorbed the dropped sites.
+    """
     pos = field[site_mask]
-    neg = field[valid_mask & ~site_mask]
+    if background_mask is None:
+        neg = field[valid_mask & ~site_mask]
+    else:
+        neg = field[valid_mask & background_mask]
     stat, p = ks_2samp(pos, neg, alternative='two-sided')
     mean_pos = float(pos.mean())
     mean_neg = float(neg.mean())
@@ -77,7 +94,7 @@ def main():
     ap.add_argument("--seed", type=int, default=42)
     args = ap.parse_args()
 
-    sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+    sys.path.insert(0, str(Path(__file__).parent))
     from ca_kernel import (
         run_one, build_fixation_field, apply_perceptual_noise,
         apply_congestion_update, k_simple_paths_weighted, path_cost
@@ -155,17 +172,27 @@ def main():
                     "F (traffic)", lines)
 
     # Leave-dominant-cluster-out KS: drops the top archaeological cluster
+    # from the POSITIVE class, but keeps the ORIGINAL background (i.e.,
+    # cells with no registered site) unchanged. This avoids the bug of
+    # counting the 64 dominant sites as "negative" when computing the
+    # residual KS statistic.
     dom_mask = dominant_cluster_mask(state.site_mask, dilation_r=3)
     n_dom = int(dom_mask.sum())
     residual_mask = state.site_mask & ~dom_mask
     n_res = int(residual_mask.sum())
+    original_bg = ~state.site_mask  # cells with no registered site
     lines.append("")
     lines.append(f"## Leave-dominant-cluster-out KS  "
                  f"({n_dom} dominant sites removed, {n_res} residual)")
+    lines.append(f"# Residual sites compared against the ORIGINAL background")
+    lines.append(f"# (12,742 non-site cells), not against non-residual cells,")
+    lines.append(f"# so the dominant sites do NOT contaminate the negative class.")
     ks_report(L_field, residual_mask, state.valid_mask,
-              "L (fixation, residual sites)", lines)
+              "L (fixation, residual sites)", lines,
+              background_mask=original_bg)
     ks_report(state.E_grid, residual_mask, state.valid_mask,
-              "E (affinity, residual sites)", lines)
+              "E (affinity, residual sites)", lines,
+              background_mask=original_bg)
 
     # Save
     with open("ks_report.txt", "w") as f:
